@@ -1,5 +1,6 @@
 # Atma Stash to D2R Converter
-Drag and drop your `.d2x` Atma stash file to convert it to a `.d2i` D2R stash.
+Drag and drop your `.d2x` Atma stash file to convert it to a `.d2i` D2R stash.  
+https://pairofdocs.github.io/atma-stash-d2r/
 
 
 ## Original Converter
