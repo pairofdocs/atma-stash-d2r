@@ -267,10 +267,11 @@ function parseStash(rawInput) {
   dst.write16(0x4d4a);     // JM  (big endian)
   dst.write16(numItems);
 
-  src.skip(2+4); // skip version and checksum
+  src.skip(6); // skip version and checksum
 
 
   function parseItem() {
+    console.log("parsing at bigpot: " + src.bitpos.toString());
     if (!D2R && src.read16() !== 0x4d4a) throw Error('invalid item header'); // D2R
     // if (D2R) dst.write16(0x4d4a);
 
@@ -452,7 +453,8 @@ function parseStash(rawInput) {
     // item count already done before function parseItem() 
     // if (copy16() !== 0x4d4a) throw Error('invalid item table header');
     // const count = copy16();
-    for (let i = 0; i < numItems; ++i) {
+    for (let i = 0; i < numItems-1; ++i) {
+      console.log("parsing item:  " + i.toString());
       parseItem();
     }
   }
