@@ -195,7 +195,7 @@ function checksum(buf) {
   return result;
 }
 
-function parseCharacter(rawInput) {
+function parseStash(rawInput) {
   const src = new BinaryReader(new Uint8Array(rawInput));
   const dst = new BinaryWriter();
   function copy8() {
@@ -235,33 +235,44 @@ function parseCharacter(rawInput) {
     dst.align();
   }
 
-  if (copy32() !== 0xaa55aa55) throw Error('invalid header');
-  const version = src.read32();
-  if (version !== 96 && version !== 97) throw Error('unsupported version');
-  const D2R = (version === 97);
-  dst.write32(D2R ? 96 : 97);
+  // if (copy32() !== 0xaa55aa55) throw Error('invalid header');
+  // const version = src.read32();
+  // if (version !== 96 && version !== 97) throw Error('unsupported version');
+  // const D2R = (version === 97);
+  // dst.write32(D2R ? 96 : 97);
 
-  skip(179 - 8);
-  const mercId = copy32();
-  skip(765 - 183);
+  // skip(179 - 8);
+  // const mercId = copy32();
+  // skip(765 - 183);
 
-  if (copy16() !== 0x6667) throw Error('invalid stats header');
+  // if (copy16() !== 0x6667) throw Error('invalid stats header');
 
-  while (true) {
-    const id = copybits(9);
-    if (id === 511) break;
-    if (!csvbits[id]) throw Error(`unknown stat code ${id}`);
-    copybits(csvbits[id]);
-  }
+  // while (true) {
+  //   const id = copybits(9);
+  //   if (id === 511) break;
+  //   if (!csvbits[id]) throw Error(`unknown stat code ${id}`);
+  //   copybits(csvbits[id]);
+  // }
 
-  align();
+  // align();
 
-  if (copy16() !== 0x6669) throw Error('invalid skills header');
-  skip(30);
+  // if (copy16() !== 0x6669) throw Error('invalid skills header');
+  // skip(30);
+
+  const D2R = false;
+  // read item count, then skip to item list
+  src.skip(3); // skip atma header
+  //d2i D2R stash file has JM, 2 bytes for size and then list of items
+  const numItems = src.read16();
+  dst.write16(0x4d4a);     // JM  (big endian)
+  dst.write16(numItems);
+
+  src.skip(2+4); // skip version and checksum
+
 
   function parseItem() {
     if (!D2R && src.read16() !== 0x4d4a) throw Error('invalid item header'); // D2R
-    if (D2R) dst.write16(0x4d4a);
+    // if (D2R) dst.write16(0x4d4a);
 
     skipbits(4);
     skipbits(1);
@@ -438,47 +449,48 @@ function parseCharacter(rawInput) {
   }
 
   function parseItemList() {
-    if (copy16() !== 0x4d4a) throw Error('invalid item table header');
-    const count = copy16();
-    for (let i = 0; i < count; ++i) {
+    // item count already done before function parseItem() 
+    // if (copy16() !== 0x4d4a) throw Error('invalid item table header');
+    // const count = copy16();
+    for (let i = 0; i < numItems; ++i) {
       parseItem();
     }
   }
 
   parseItemList(); // character items
 
-  //console.log('corpses', (src.bitpos / 8).toString(16), (dst.bitpos / 8).toString(16));
-  if (copy16() !== 0x4d4a) throw Error('invalid item table header');
-  const corpses = copy16();
-  skip(corpses * 12);
-  for (let i = 0; i < corpses; ++i) {
-    parseItemList(); // corpses
-  }
+  // //console.log('corpses', (src.bitpos / 8).toString(16), (dst.bitpos / 8).toString(16));
+  // if (copy16() !== 0x4d4a) throw Error('invalid item table header');
+  // const corpses = copy16();
+  // skip(corpses * 12);
+  // for (let i = 0; i < corpses; ++i) {
+  //   parseItemList(); // corpses
+  // }
 
-  if (copy16() !== 0x666a) throw Error('invalid hireling header');
-  if (mercId) {
-    parseItemList();
-  }
+  // if (copy16() !== 0x666a) throw Error('invalid hireling header');
+  // if (mercId) {
+  //   parseItemList();
+  // }
 
-  if (copy16() !== 0x666b) throw Error('invalid iron golem header');
-  if (copy8()) {
-    parseItem();
-  }
+  // if (copy16() !== 0x666b) throw Error('invalid iron golem header');
+  // if (copy8()) {
+  //   parseItem();
+  // }
 
   if (!src.eof()) throw Error('file too long');
 
   const length = dst.bitpos >> 3;
-  dst.seek(8);
-  dst.write32(length);
-  dst.write32(0);
-  //dst.buffer.set(quests, 345);
-  //dst.buffer[0x24] |= 0x40;
-  dst.buffer[0x14B] = 1;
+  // dst.seek(8);
+  // dst.write32(length);
+  // dst.write32(0);
+  // //dst.buffer.set(quests, 345);
+  // //dst.buffer[0x24] |= 0x40;
+  // dst.buffer[0x14B] = 1;
 
   const result = dst.buffer.subarray(0, length);
-  const cs = checksum(result);
-  dst.seek(12);
-  dst.write32(cs);
+  // const cs = checksum(result);
+  // dst.seek(12);
+  // dst.write32(cs);
 
   return {result, d2r: D2R};
 }
@@ -503,11 +515,22 @@ function getDropFile(e) {
   }
 }
 
+// const file = "./Default.d2x";
+// // const data = readFile(file);
+// // const reader = new FileReader();
+// // const reader = new global.FileReader();
+// // reader.readAsArrayBuffer(file);
+// var fs = require('fs');
+// const data = fs.readFileSync(file);
+
+// then move to parseStash(data)
+
+
 async function process(file) {
   const data = await readFile(file);
   let result, text;
   try {
-    const res = parseCharacter(data);
+    const res = parseStash(data);
     result = res.result;
     text = (res.d2r ? 'Download legacy save' : 'Download D2R save');
   } catch (e) {
@@ -569,9 +592,9 @@ function onDragLeave(e) {
 </style>
 </head>
 <body>
-<h3>D2 &lt;&gt; D2R save file converter</h3>
-<p>Drop .d2s file anywhere on the page</p>
-<p>Save files can be located at C:/Users/&lt;name&gt;/Saved Games/Diablo II</p>
+<h3>D2 &lt;&gt; Convert Atma .d2x stash to D2R .d2i stash</h3>
+<p>Drop .d2x file anywhere on the page</p>
+
 <p id="output-log" />
 <script>
 document.addEventListener("drop", onDrop, true);
