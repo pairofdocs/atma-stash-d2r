@@ -541,7 +541,7 @@ async function process(file) {
   const url = URL.createObjectURL(blob);
   const lnk = document.createElement('a');
   lnk.setAttribute('href', url);
-  lnk.setAttribute('download', file.name);
+  lnk.setAttribute('download', file.name.replace(".d2x",".d2i"));
   lnk.innerText = text;
 
   const dl = document.getElementById("output-log");
@@ -592,8 +592,8 @@ function onDragLeave(e) {
 </style>
 </head>
 <body>
-<h3>D2 &lt;&gt; Convert Atma .d2x stash to D2R .d2i stash</h3>
-<p>Drop .d2x file anywhere on the page</p>
+<h3>Convert Atma .d2x stash to D2R .d2i stash</h3>
+<p>Drop .d2x file anywhere on the page and save the converted file with the .d2i file extension</p>
 
 <p id="output-log" />
 <script>
