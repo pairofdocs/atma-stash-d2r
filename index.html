@@ -290,7 +290,7 @@ function parseStash(rawInput) {
   
   function parseItem() {
     console.log("parsing at bitpos: " + src.bitpos.toString());
-    if (!D2R && src.read16() !== 0x4d4a) throw Error('invalid item header'); // D2R
+    if (!D2R && src.read16() !== 0x4d4a) throw Error('invalid item header');
     if (D2R) dst.write16(0x4d4a);
 
     skipbits(4);
@@ -543,13 +543,11 @@ function getDropFile(e) {
   }
 }
 
-// const file = "./Default.d2x";
-// const file = "./MainStash.d2x";
-// const file = "./MainStash_minus_1983.d2x"
-// // const data = readFile(file);
-// // const reader = new FileReader();
-// // const reader = new global.FileReader();
-// // reader.readAsArrayBuffer(file);
+// var file = "./Default.d2x";
+// var file = "./MainStash.d2x";
+// var file = "./MainStash_minus_1983.d2x"
+// var file = "./MainStash-1982.d2x"
+
 // var fs = require('fs');
 // const rawInput = fs.readFileSync(file);
 
@@ -558,11 +556,12 @@ function getDropFile(e) {
 
 async function process(file) {
   const data = await readFile(file);
-  let result, text;
+  let result, text, d2r;
   try {
     const res = parseStash(data);
     result = res.result;
-    text = (res.d2r ? 'Download legacy save' : 'Download D2R save');
+    d2r = res.d2r;
+    text = (d2r ? 'Download legacy stash' : 'Download D2R stash');
   } catch (e) {
     document.getElementById("output-log").innerText = e.message;
   }
@@ -571,7 +570,11 @@ async function process(file) {
   const url = URL.createObjectURL(blob);
   const lnk = document.createElement('a');
   lnk.setAttribute('href', url);
-  lnk.setAttribute('download', file.name.replace(".d2x",".d2i"));
+  if (d2r) {
+    lnk.setAttribute('download', file.name.replace(".d2i",".d2x"));
+  }else {
+    lnk.setAttribute('download', file.name.replace(".d2x",".d2i"));
+  }
   lnk.innerText = text;
 
   const dl = document.getElementById("output-log");
