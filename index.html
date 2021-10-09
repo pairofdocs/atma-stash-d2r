@@ -263,18 +263,44 @@ function parseStash(rawInput) {
   secondbytes = src.read16();
   var D2R = false;
   var numItems = 0;
+  var Plugy = false;
+  var numStashes = 0;
+  var totNumItems = 0;  // sum all numItems per plugy stash
+
   if (firstbyte === 68 && secondbytes === 22578) {
     D2R = false;
+  }else if (firstbyte === 83 && secondbytes === 21331) {
+    D2R = false;
+    Plugy = true;
   }else {
     D2R = true;
   }
   // read item count, then skip to item list
   if (!D2R) {
-    numItems = src.read16();
-    // d2i D2R stash file has JM, 2 bytes for size and then list of items
-    dst.write16(0x4d4a);     // JM  (big endian)
-    dst.write16(numItems);
-    src.skip(6); // skip version and checksum
+    if (!Plugy) {
+      numItems = src.read16();
+      // d2i D2R stash file has JM, 2 bytes for size and then list of items
+      dst.write16(0x4d4a);     // JM  (big endian)
+      dst.write16(numItems);
+      src.skip(6); // skip version and checksum
+    }else { 
+      // Plugy shared stash save 
+      src.skip(1); // skip x00 
+      // 12592  for chars 0,1  12848 for chars 0,2
+      var versionbytes = src.read16();
+      if (versionbytes === 12592) {
+        ;
+      }else if (versionbytes === 12848) {
+        // shared stash gold is skipped
+        src.skip(4);
+      }else {
+        throw new Error(`Unsupported Plugy shared stash version ${versionbytes} . Must be version 01 or 02`);
+      }
+      numStashes = src.read32();
+
+      dst.write16(0x4d4a);        // JM  (big endian)
+      dst.write16(totNumItems);   // filled in once reading all stashes is complete.  dst.seek() and write16(totNumItems)
+    }
   }else {
     src.bitpos = 0;
     src.skip(2);     // JM
@@ -484,7 +510,37 @@ function parseStash(rawInput) {
     }
   }
 
-  parseItemList(); // character items
+  function readStashPage() {
+    var stheader = src.read16();  // chars ST
+    if (stheader !== 21587) {
+      throw new Error('Can not read stash page header ST');
+    }
+    // page.type = reader.ReadInt(1);
+    src.skip(4);  // skip stash type and flags
+    // advance byte pos until after the Null char terminator
+    var byteterminator = src.read8();
+    while (byteterminator !== 0) {
+      byteterminator = src.read8();
+    }
+    // skip JM, and read numItems
+    src.skip(2);
+    numItems = src.read16();
+    totNumItems += numItems;
+    parseItemList(); 
+  }
+
+  function parsePlugyStashes() {
+    for (let i = 0; i < numStashes; i++) {
+      readStashPage();
+    }
+  }
+
+  if (!Plugy){
+    parseItemList(); // character items
+  }else {
+    parsePlugyStashes();
+  }
+  
 
   // //console.log('corpses', (src.bitpos / 8).toString(16), (dst.bitpos / 8).toString(16));
   // if (copy16() !== 0x4d4a) throw Error('invalid item table header');
@@ -520,6 +576,11 @@ function parseStash(rawInput) {
     dst.seek(7);
     dst.write32(cs);
   }
+  if (Plugy) {
+    dst.seek(2);
+    console.log(`totNumItems: ${totNumItems}`);
+    dst.write16(totNumItems);
+  }
   return {result, d2r: D2R};
 }
 
@@ -547,6 +608,7 @@ function getDropFile(e) {
 // var file = "./MainStash.d2x";
 // var file = "./MainStash_minus_1983.d2x"
 // var file = "./MainStash-1982.d2x"
+// var file = "./_LOD_SharedStashSave.sss"
 
 // var fs = require('fs');
 // const rawInput = fs.readFileSync(file);
@@ -573,7 +635,11 @@ async function process(file) {
   if (d2r) {
     lnk.setAttribute('download', file.name.replace(".d2i",".d2x"));
   }else {
-    lnk.setAttribute('download', file.name.replace(".d2x",".d2i"));
+    if (file.name.endsWith(".sss")) {
+      lnk.setAttribute('download', file.name.replace(".sss",".d2i"));
+    }else {
+      lnk.setAttribute('download', file.name.replace(".d2x",".d2i"));
+    }
   }
   lnk.innerText = text;
 
@@ -627,12 +693,17 @@ function onDragLeave(e) {
 <body>
 <h3>Convert Atma .d2x stash to D2R .d2i stash</h3>
 <h3>Or convert D2R .d2i stash to Atma .d2x stash</h3>
+<h3><strong> *Update</strong>: Or convert D2 LoD Plugy Shared Stash .sss to D2R .d2i stash</h3>
+<br>
 <p>Drop a .d2x (or .d2i) file anywhere on the page and save the converted file with the .d2i file extension (or .d2x for an Atma output stash)</p>
+<p> </p>
+<p><strong> *Update</strong>: Drop a .sss file anywhere on the page and save the converted file with the .d2i file extension </p>
 
 <p id="output-log"></p>
 <br style="margin: 12rem">
 <p>Code available on Github <a href="https://github.com/pairofdocs/atma-stash-d2r">https://github.com/pairofdocs/atma-stash-d2r</a></p>
 <p>Credits to Riv the original author of the conversion code <a href="https://github.com/d07RiV/d07riv.github.io">https://github.com/d07RiV/d07riv.github.io</a></p>
+<p>Credits to mgamperl for .sss parsing code <a href="https://github.com/dschu012/d2s/pull/15/files">https://github.com/dschu012/d2s/pull/15/files</a></p>
 
 <script>
 document.addEventListener("drop", onDrop, true);
