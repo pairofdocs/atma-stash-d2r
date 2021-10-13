@@ -259,52 +259,31 @@ function parseStash(rawInput) {
   // skip(30);
 
   // Read first 3 bytes of stash file.  if they == D2X then not D2R stash
-  firstbyte = src.read8();
+  firstbyte = src.read8();   // can be skipped since if-logic checks version, not first 3 bytes
   secondbytes = src.read16();
+  var numItems = src.read16();
+  var version = src.read16();
   var D2R = false;
-  var numItems = 0;
-  var Plugy = false;
-  var numStashes = 0;
-  var totNumItems = 0;  // sum all numItems per plugy stash
-
-  if (firstbyte === 68 && secondbytes === 22578) {
+  
+  if (version === 96) {
     D2R = false;
-  }else if (firstbyte === 83 && secondbytes === 21331) {
-    D2R = false;
-    Plugy = true;
   }else {
     D2R = true;
   }
+
   // read item count, then skip to item list
   if (!D2R) {
-    if (!Plugy) {
-      numItems = src.read16();
-      // d2i D2R stash file has JM, 2 bytes for size and then list of items
-      dst.write16(0x4d4a);     // JM  (big endian)
-      dst.write16(numItems);
-      src.skip(6); // skip version and checksum
-    }else { 
-      // Plugy shared stash save 
-      src.skip(1); // skip x00 
-      // 12592  for chars 0,1  12848 for chars 0,2
-      var versionbytes = src.read16();
-      if (versionbytes === 12592) {
-        ;
-      }else if (versionbytes === 12848) {
-        // shared stash gold is skipped
-        src.skip(4);
-      }else {
-        throw new Error(`Unsupported Plugy shared stash version ${versionbytes} . Must be version 01 or 02`);
-      }
-      numStashes = src.read32();
-
-      dst.write16(0x4d4a);        // JM  (big endian)
-      dst.write16(totNumItems);   // filled in once reading all stashes is complete.  dst.seek() and write16(totNumItems)
-    }
+    src.skip(4); // skip checksum
+    // numItems = src.read16();
+    // write D2X, itemcount, version 96, 00 00 00 00 for checksum
+    dst.write8(0x44);
+    dst.write16(0x5832);
+    dst.write16(numItems);
+    dst.write16(97);
+    dst.write32(0x00000000); // fill in checksum after dst is populated
   }else {
-    src.bitpos = 0;
-    src.skip(2);     // JM
-    numItems = src.read16();
+    src.skip(4); // skip checksum
+    // numItems = src.read16();
     // write D2X, itemcount, version 96, 00 00 00 00 for checksum
     dst.write8(0x44);
     dst.write16(0x5832);
@@ -510,36 +489,7 @@ function parseStash(rawInput) {
     }
   }
 
-  function readStashPage() {
-    var stheader = src.read16();  // chars ST
-    if (stheader !== 21587) {
-      throw new Error('Can not read stash page header ST');
-    }
-    // page.type = reader.ReadInt(1);
-    src.skip(4);  // skip stash type and flags
-    // advance byte pos until after the Null char terminator
-    var byteterminator = src.read8();
-    while (byteterminator !== 0) {
-      byteterminator = src.read8();
-    }
-    // skip JM, and read numItems
-    src.skip(2);
-    numItems = src.read16();
-    totNumItems += numItems;
-    parseItemList(); 
-  }
-
-  function parsePlugyStashes() {
-    for (let i = 0; i < numStashes; i++) {
-      readStashPage();
-    }
-  }
-
-  if (!Plugy){
-    parseItemList(); // character items
-  }else {
-    parsePlugyStashes();
-  }
+  parseItemList(); // character items
   
 
   // //console.log('corpses', (src.bitpos / 8).toString(16), (dst.bitpos / 8).toString(16));
@@ -571,16 +521,10 @@ function parseStash(rawInput) {
   // dst.buffer[0x14B] = 1;
 
   const result = dst.buffer.subarray(0, length);
-  if (D2R) {
-    const cs = checksum(result);
-    dst.seek(7);
-    dst.write32(cs);
-  }
-  if (Plugy) {
-    dst.seek(2);
-    console.log(`totNumItems: ${totNumItems}`);
-    dst.write16(totNumItems);
-  }
+  const cs = checksum(result);
+  dst.seek(7);
+  dst.write32(cs);
+
   return {result, d2r: D2R};
 }
 
@@ -623,7 +567,7 @@ async function process(file) {
     const res = parseStash(data);
     result = res.result;
     d2r = res.d2r;
-    text = (d2r ? 'Download legacy stash' : 'Download D2R stash');
+    text = (d2r ? 'Download Atma version 96 D2R .d2x stash' : 'Download Atma version 97 LoD .d2x stash');
   } catch (e) {
     document.getElementById("output-log").innerText = e.message;
   }
@@ -632,15 +576,8 @@ async function process(file) {
   const url = URL.createObjectURL(blob);
   const lnk = document.createElement('a');
   lnk.setAttribute('href', url);
-  if (d2r) {
-    lnk.setAttribute('download', file.name.replace(".d2i",".d2x"));
-  }else {
-    if (file.name.endsWith(".sss")) {
-      lnk.setAttribute('download', file.name.replace(".sss",".d2i"));
-    }else {
-      lnk.setAttribute('download', file.name.replace(".d2x",".d2i"));
-    }
-  }
+  lnk.setAttribute('download', file.name);
+  
   lnk.innerText = text;
 
   const dl = document.getElementById("output-log");
@@ -691,21 +628,15 @@ function onDragLeave(e) {
 </style>
 </head>
 <body>
-<h3>Convert Atma .d2x stash to D2R .d2i stash</h3>
-<h3>Or convert D2R .d2i stash to Atma .d2x stash</h3>
-<h3><strong> *Update</strong>: Or convert D2 LoD Plugy Shared Stash .sss to D2R .d2i stash</h3>
-<h3><strong> *Update</strong>: Conversion between Atma version 96 stashes (LoD) and Atma version 97 stashes (D2R) is available here <a href="https://github.com/pairofdocs/atma-stash-d2r/d2x/convert96to97.html">d2x/convert96to97.html</a> </h3>
-
+<h3>Convert Atma version 96 (LoD) .d2x stash to Atma version 97 (D2R) .d2x stash</h3>
 <br>
-<p>Drop a .d2x (or .d2i) file anywhere on the page and save the converted file with the .d2i file extension (or .d2x for an Atma output stash)</p>
+<p>Drop a .d2x file anywhere on the page and save the converted file with the .d2x file extension</p>
 <p> </p>
-<p><strong> *Update</strong>: Drop a .sss file anywhere on the page and save the converted file with the .d2i file extension </p>
 
 <p id="output-log"></p>
 <br style="margin: 12rem">
-<p>Code available on Github <a href="https://github.com/pairofdocs/atma-stash-d2r">https://github.com/pairofdocs/atma-stash-d2r</a></p>
+<p>Code available on Github <a href="https://github.com/pairofdocs/atma-stash-d2r/d2x/convert96to97.html">https://github.com/pairofdocs/atma-stash-d2r/d2x/convert96to97.html</a></p>
 <p>Credits to Riv the original author of the conversion code <a href="https://github.com/d07RiV/d07riv.github.io">https://github.com/d07RiV/d07riv.github.io</a></p>
-<p>Credits to mgamperl for .sss parsing code <a href="https://github.com/dschu012/d2s/pull/15/files">https://github.com/dschu012/d2s/pull/15/files</a></p>
 
 <script>
 document.addEventListener("drop", onDrop, true);

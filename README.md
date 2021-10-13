@@ -2,6 +2,7 @@
 Drag and drop your `.d2x` Atma stash file to convert it to a `.d2i` D2R stash.  
 https://pairofdocs.github.io/atma-stash-d2r/  
 **Update**: Drag and drop your Plugy `.sss` shared stash file to convert it to a `.d2i` D2R stash.  
+**Update**: Conversion between Atma version 96 stashes (LoD) and Atma version 97 stashes (D2R) is available here [atma-stash-d2r/d2x/convert96to97.html](https://github.com/pairofdocs/atma-stash-d2r/d2x/convert96to97.html)  
 
 
 ## Original Converter
@@ -12,6 +13,7 @@ Credits to `mgamperl` for `.sss` shared stash reading code https://github.com/ds
 
 ## Stash File Formats
 [Table](https://github.com/squeek502/d2itemreader/blob/master/docs/formats/atma.md) from https://squeek502.github.io/d2itemreader/formats/atma.html
+
 
 ### ATMA Stash (.d2x) File Format
 
