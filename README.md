@@ -1,8 +1,11 @@
 # Atma Stash to D2R Converter
+***Use this converter if you're using Gomule from github.com/pairofdocs/gomule-d2r***  
 Drag and drop your `.d2x` Atma stash file to convert it to a `.d2i` D2R stash.  
 https://pairofdocs.github.io/atma-stash-d2r/  
-**Update**: Drag and drop your Plugy `.sss` shared stash file to convert it to a `.d2i` D2R stash.  
-**Update**: Conversion between Atma version 96 stashes (LoD) and Atma version 97 stashes (D2R) is available here [atma-stash-d2r/convert96to97.html](https://pairofdocs.github.io/atma-stash-d2r/convert96to97.html)  
+Drag and drop your Plugy `.sss` shared stash file to convert it to a `.d2i` D2R stash.  
+
+***Use this converter if you're using the official Gomule from sourceforge.net/projects/gomule***  
+Conversion between Atma version 96 stashes (LoD) and Atma version 97 stashes (D2R) is available here [atma-stash-d2r/convert96to97.html](https://pairofdocs.github.io/atma-stash-d2r/convert96to97.html)  
 
 
 ## Original Converter
