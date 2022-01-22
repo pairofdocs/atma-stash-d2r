@@ -7,7 +7,7 @@ Drag and drop your Plugy `.sss` shared stash file to convert it to a `.d2i` D2R 
 ***Use this converter if you're using the official Gomule from sourceforge.net/projects/gomule***  
 Conversion between Atma version 96 stashes (LoD) and Atma version 97 stashes (D2R) is available here [atma-stash-d2r/convert96to97.html](https://pairofdocs.github.io/atma-stash-d2r/convert96to97.html)  
 
-**NOTE**: the converter fails on stashes that have 2000+ items. Split your stash to smaller parts if it has 2000k+ items. See posts about it here https://github.com/pairofdocs/gomule-d2r/issues/5?ref=https://githubhelp.com#issuecomment-927321799 and here https://www.reddit.com/r/Diablo/comments/nim6m0/gomule_for_d2r_early_version/heacek7/?utm_source=share&utm_medium=web2x&context=3
+**NOTE**: the converter fails on stashes that have 2000+ items. Split your stash to smaller parts if it has 2000k+ items. See posts about it here https://github.com/pairofdocs/gomule-d2r/issues/5?ref=https://githubhelp.com#issuecomment-927321799, here https://www.reddit.com/r/Diablo/comments/nim6m0/gomule_for_d2r_early_version/heacek7/?utm_source=share&utm_medium=web2x&context=3 and here https://github.com/pairofdocs/atma-stash-d2r/issues/2#issuecomment-1013040081
 
 
 ## Original Converter
